@@ -19,6 +19,9 @@ Several questions were drawn from Chapter 5 of the book [_R for data science_ by
 
 ## Part 1 - The `filter()` function
 
+```{r view flights}
+flights
+```
 `filter()` is a tidyverse function that returns the rows that satisfy the desired conditions. Let's now practice using `filter`!
 
 ### Exercise 1.1 
@@ -47,9 +50,7 @@ Use dplyr's `filter()` to answer which flights arrived more than two hours late,
 Use dplyr's `filter()` to answer which flights departed between 2:00am and 6:00am (inclusive)? (Suggestion: check the dplyr's function `between()`)
 
 ```{r Exercise 1.3}
-#TODO
-# get the flights that were departed between 2:00am and 6:00am
-# replace NULL with your code
+
 (flights_early <- NULL)
 ```
 
@@ -98,14 +99,11 @@ Select the variables `dep_time`, `dep_delay`, `arr_time`, and `arr_delay` from f
 `mutate()` is a tidyverse function that allows you to transform existing variables or create new variables that are functions of the existing ones. Use `mutate()` to answer the questions below.
  
 ### Exercise 4.1 
-Currently `dep_time` and `sched_dep_time` are convenient to look at, but hard to compute with because they are not really continuous numbers. To change that, answer the following questions:
-
-
-#### Exercise 4.1.1
+Currently `dep_time` and `sched_dep_time` are convenient to look at, but hard to compute with because they are not really continuous numbers.
 
 Considering the previous items, convert `dep_time` and `sched_dep_time` to a more convenient representation of number of minutes since midnight using `mutate()`.
 
-```{r Exercise 4.1.3}
+```{r Exercise 4.1}
 
 ```    
 
@@ -118,7 +116,7 @@ Create a new variable `avg_speed` that stores the average air speed of the fligh
 (flights_df <- NULL)
 ```    
     
-### Exercise 4.3 (Optional) 
+### Exercise 4.3
 
 Compare `air_time` with `arr_time` - `dep_time`. What do you expect to see? What do you see? List a few problems that would need to be fixed (don't worry about fixing them right now).
 
@@ -181,7 +179,7 @@ autocor_delay_jan <- NULL
 autocor_delay_july <- NULL
 ```
 
-#### Exercise 6.1.3 
+#### Exercise 6.1.2
 
 Use the `acf` function (see `?acf`) to obtain the correlation using many different lags for flights departing from `LGA` airport on January 1st. Do the same for flights departing from `LGA` airport on July 28th. What is your interpretation of these plots?
 
@@ -189,7 +187,7 @@ Use the `acf` function (see `?acf`) to obtain the correlation using many differe
 
 ```
 
-#### Exercise 6.1.4 
+#### Exercise 6.1.3 
 
 So far the investigation was focused on two specific days. Now, create a new variable with `mutate`, named `dep_delay_lagged`, which is the lagged `dep_delay` and obtain the correlation coefficient between `dep_delay` and `dep_delay_lagged` for each day of the year, and each origin. Use a lag of 1. What day of the year and origin presented the highest correlation coefficient?
 
