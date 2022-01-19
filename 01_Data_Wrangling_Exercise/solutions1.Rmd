@@ -1,0 +1,490 @@
+---
+title: "Exercise 1 - Working with tabular datasets"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(nycflights13)
+library(magrittr)
+library(digest)
+library(testthat)
+```
+
+The goal is to manipulate and explore a dataset (the `nycflights13` dataset from the R `nycflights13` package) with the `dplyr` package. Please check the packages for this lab in the chunk setup (above).
+
+## Part 1 - The `filter()` function
+
+`filter()` is a tidyverse function that returns the rows that satisfy the desired conditions. Let's now practice using `filter`!
+
+### Exercise 1.1 
+
+Use dplyr's `filter()` to answer which flights were operated by United, American, or Delta? Save the output of your code as a tibble (special kind of data frame) named `flights_uad`. (Hint: check the tibble `airlines` for carrier names)
+    
+The tibble `airlines` provides the name of the carriers. You can use the `filter()` function as follows:
+    
+```{r Exercise 1.1 Solution 1}
+flights_uad <-
+  flights %>%
+  filter(carrier %in% c("AA", "DL", "UA"))
+
+head(flights_uad, 10)
+```
+    
+(Optional - check `?grepl`). For a more automated way, you could run
+    
+```{r Exercise 1.1 Solution 2}
+UN <-
+  airlines %>%
+  filter(grepl("United", name)) %>%
+  select(carrier)
+
+AM <-
+  airlines %>%
+  filter(grepl("American", name)) %>%
+  select(carrier)
+
+DL <-
+  airlines %>%
+  filter(grepl("Delta", name)) %>%
+  select(carrier)
+
+flights_uad <-
+  flights %>%
+  filter(carrier %in% c(UN, AM, DL))
+```
+
+### Exercise 1.2
+
+Use dplyr's `filter()` to answer which flights arrived more than two hours late, but did not leave late?
+    
+```{r Exercise 1.2 Solution}
+delayed_on_route <-
+  flights %>%
+  filter(dep_delay <= 0 & arr_delay > 120)
+
+head(delayed_on_route, 10)
+```
+    
+### Exercise 1.3
+
+Use dplyr's `filter()` to answer which flights departed between 2:00am and 6:00am (inclusive)? (Suggestion: check the dplyr's function `between()`)
+
+```{r Exercise 1.3 Solution}
+flights_early <-
+  flights %>%
+  filter(dep_time <= 600 & dep_time >= 200)
+
+# Alternatively,
+flights_early <-
+  flights %>%
+  filter(between(dep_time, 200, 600))
+
+head(flights_early, 10)
+```
+
+## Part 2 - The `arrange()` function
+
+`arrange()` is a tidyverse function that allows you to sort the rows in ascending or descending order. Let's practice!
+
+### Exercise 2.1
+
+Use dplyr's `arrange()` (and dplyr's `filter()` if necessary) to find those flights most delayed on departure. Also, find the least non-negatively delayed flights (on departure).
+
+The most delayed flights on departure:
+    
+```{r Exercise 2.1 Solution Part 1}
+most_delayed <-
+  flights %>%
+  arrange(desc(dep_delay))
+```
+    
+The least non-negatively delayed flights (on departure):
+
+```{r Exercise 2.1 Solution Part 2 }
+least_delayed <-
+  flights %>%
+  filter(dep_delay >= 0) %>%
+  arrange(dep_delay)
+```
+
+### Exercise 2.2
+
+Use dplyr's `arrange()` to find which flights travelled the longest in terms of air time? And which travelled the shortest (in terms of air time)?
+
+The flights that travelled the longest (in terms of air time):
+
+```{r Exercise 2.2 Solution Part 1}
+longest_duration <- 
+  flights %>%
+  arrange(desc(air_time))
+```
+
+On the other hand, the flights with shortest air time:
+
+```{r Exercise 2.2 Solution Part 2}
+shortest_duration <-
+  flights %>%
+  arrange(air_time)
+```
+
+## Part 3 - `select()`
+
+Use dplyr's `select()` to answer the following questions:
+
+### Exercise 3.1 
+
+Select the variables `dep_time`, `dep_delay`, `arr_time`, and `arr_delay` from flights.
+
+```{r Exercise 3.1 Solution}
+flights %>%
+  select(dep_time, dep_delay, arr_time, arr_delay)
+```
+    
+### Exercise 3.2 
+
+What happens if you include the name of a variable multiple times in a `select()` call? (Hint: be aware of the fact that you can use negative signs in `select()` to remove variables)
+
+That depends on the situation. If the variable is called more than once to be selected, it will appear only once. For example,
+
+```{r Exercise 3.2 Solution Part 1} 
+flights %>% select(dep_time, dep_time)
+```
+    
+But, if in one appearance is to select, and in a posterior appearance is to remove, than the variable is removed. For example,
+
+```{r Exercise 3.2 Solution Part 2} 
+flights %>% select(year:dep_time, -dep_time)
+```
+
+In these cases, the last appearance will determine if the variable is selected or removed. For example,
+
+```{r Exercise 3.2 Solution Part 3} 
+flights %>% select(-dep_time, dep_time)
+```
+    
+## Part 4 - `mutate()`
+
+`mutate()` is a tidyverse function that allows you to transform existing variables or create new variables that are functions of the existing ones. Use `mutate()` to answer the questions below.
+ 
+
+#### Exercise 4.1.
+
+Considering the previous items, convert `dep_time` and `sched_dep_time` to a more convenient representation of number of minutes since midnight using `mutate()`.
+
+In the previous itens we managed to separate the hour and minutes of `dep_time` and `sched_dep_time`. Now we can use this to obtain the total minutes since midnight. We'll save the results in a new `tibble` object `flights_df` with a certain naming convention: `_msam` stands for "minutes since any midnight" and represents data that has been "modded by the 0th hour"; `_msom` stands for "minutes since original midnight" and its data is measured from the midnight corresponding to the day of the scheduled departure time. Both answers are viable.
+
+```{r Exercise 4.1.3 Solution}
+minutesSinceMidnight <- function(x) {
+  60 * x %/% 100 + x %% 100
+}
+
+flights_df <-
+  flights %>%
+  na.omit() %>%
+  mutate(sched_dep_time_msm = minutesSinceMidnight(sched_dep_time),
+    dep_time_msom = sched_dep_time_msm + dep_delay,
+    dep_time_msam = minutesSinceMidnight(dep_time)
+  )
+```
+    
+
+### Exercise 4.2 
+
+Create a new variable `avg_speed` that stores the average air speed of the flight in km/h. (Hint: 1 mile is approximately 1.6093 km).
+
+We have to consider two things: (1) the `distance` is given in miles; and (2) the `air_time` is given in minutes. Then, 
+
+```{r Exercise 4.2 Solution}
+flights_df <-
+  flights %>%
+  mutate(avg_speed = (distance * 1.6093) / (air_time / 60))
+```
+    
+### Exercise 4.3 (Optional) 
+
+Compare `air_time` with `arr_time` - `dep_time`. What do you expect to see? What do you see? List a few problems that would need to be fixed (don't worry about fixing them right now).
+
+```{r Exercise 4.3 Solution}
+flights %>% 
+  mutate(diff = arr_time - dep_time) %>%
+  select(air_time, diff)
+```
+
+Well, I would expect to see that `air_time` is equal `arr_time` - `dep_time`. That clearly does not happen. 
+Sometimes `arr_time - dep_time` is **negative**. Why? A non-exhaustive list of issues are as follows:
+    
+* The subtraction doesn't make sense unless we convert to minutes since midnight or some other acceptable time format (*e.g.,* using `lubridate`). For example, compare departure/arrival time pairs (933,935) and (2359, 1): they have the same duration, but very different numerical differences. 
+
+* Sometimes arrival time is earlier than departure time. This is absurd: how can you get where you're going before you even leave? Likely, this occurs when the arrival time is after midnight, with no way for the arrival day to roll over.
+
+* Departure and arrival times are given in local time, so for their difference to be on the same order as air time, one would have to correct for time zones. Again, see `lubridate`.
+
+* It might be the case that departure time is measured from the moment the aircraft leaves the gate; arrival time the moment the aircraft gets to the gate; and air time the duration that the aircraft is in the air. If this is the case, then delays on the tarmac would result in discrepancies between air time and any remaining difference between arrival and departure times. 
+    
+## Part 5 - Grouped summaries with `summarise()`
+
+`summarise()` is a dplyr function that obtain summary quantities for your data. When combined with `group_by()`, `summarise()` will obtain the requested summary quantities for each individual group. Let's practice this combination. 
+
+Use dplyr's `group_by()` and `summarise()` to answer the questions below.
+
+### Exercise 5.1 
+
+Look at the number of cancelled flights in each day of the year. Is the proportion of cancelled flights related to the average delay? What is the sample correlation value? (Hint: one way to identify cancelled flights would be to look for missing values in the delay variables).
+
+First, we summarise the data: 
+    
+```{r Exercise 5.1 Solution Part 1}
+canc_delay <-
+  flights %>%
+  group_by(year, month, day) %>%
+  summarise(
+    canc_percent = mean(is.na(dep_delay)) * 100,
+    mean_delay = mean(dep_delay, na.rm = TRUE),
+    n = sum(!is.na(dep_delay))
+  )
+
+head(canc_delay, 10)
+```
+    
+Next, we can obtain the correlation coefficient between the average delay and the proportion of cancelled flights:
+    
+```{r Exercise 5.1 Solution Part 2 }
+cor_canc_delay <- 
+  canc_delay %$% 
+  cor(canc_percent, mean_delay)
+```
+
+Visualization techniques are also quite helpful in detecting correlation between variables: 
+
+```{r Exercise 5.1 Solution Part 3}
+canc_delay %>%
+  ggplot(aes(x = mean_delay, y = canc_percent)) +
+  geom_point()
+```
+
+It is clear that the proportion of cancelled flights is related to the average delay. 
+
+### Exercise 5.2 
+
+Obtain the average speed and average distance for each carrier. Sort the results according to the average speed. What happened to the average distance variable (after you sorted according to the average speed)? Would you say that the variables are correlated?
+
+    
+When we sort the data based on the mean speed of the carriers, the average distance variable gets almost completely sorted as well, with only a few data points out of order. This indicates a strong correlation. 
+
+```{r Exercise 5.2 Solution Part 1}
+carriers_speed <-
+  flights_df %>%
+  group_by(carrier) %>%
+  summarise(
+    speed = mean(avg_speed, na.rm = TRUE),
+    avg_distance_km = mean(1.6093 * distance, na.rm = TRUE),
+    n = sum(!is.na(avg_speed))
+  ) %>%
+  arrange(desc(speed))
+
+print(carriers_speed)
+```
+
+Indeed, the correlation index is quite high. 
+
+```{r Exercise 5.2 Solution Part 2}
+cor_speed_dist <-
+  carriers_speed %$% 
+  cor(speed, avg_distance_km)
+```
+
+Therefore, we can see that as the distance increases, so does avg_speed. A figure might help us to visualize:
+
+```{r Exercise 5.2 Solution Part 3}
+carriers_speed %>%
+  ggplot() +
+  geom_point(aes(avg_distance_km, speed))
+```
+  
+### Exercise 5.3
+
+Which carrier has the worst delays? What about airports - which airports have the worst delays? Do you think the airports have a role on the performance of the carriers? Check the delay average grouped by airport and carrier. (Note: when summarising never forget to check the number of samples you have in the categories, see `?n()` - a very small sample provides very unstable estimators.)
+
+There are number of ways of identifying the carrier with the worst delays -- could be carrier with the most cancelled flights, the carrier with the longest delays etc. All definitions of delays, as long as they are clearly justified are acceptable. Based on the `arr_delay`, the carriers with the worst delays are: 
+    
+```{r Exercise 5.3 Solution Part 1}
+flights %>%
+  group_by(carrier) %>%
+  summarise(
+    mean_delay = mean(arr_delay, na.rm = TRUE),
+    n = sum(!is.na(arr_delay))
+  ) %>%
+  arrange(desc(mean_delay))
+```
+
+Note: in the code above I used `sum(!is.na(arr_delay))` instead of `n()`, why?  
+Similarly, the airports with the worst delays are:
+
+```{r Exercise 5.3 Solution Part 2}
+flights %>%
+  group_by(dest) %>%
+  summarise(
+    mean_delay = mean(arr_delay, na.rm = TRUE),
+    n = sum(!is.na(arr_delay))
+  ) %>%
+  arrange(desc(mean_delay))
+```
+
+Next, considering both: 
+
+```{r Exercise 5.3 Solution Part 3}
+delays <-
+  flights %>%
+  group_by(dest, carrier) %>%
+  summarise(
+    mean_delay = mean(arr_delay, na.rm = TRUE),
+    n = sum(!is.na(arr_delay))
+  ) %>%
+  arrange(desc(mean_delay))
+
+head(delays, 10)
+```
+
+More interestingly, we could also arrange the data by `dest` so we could more easily compare the delays of the carrier to specific airports.
+
+```{r Exercise 5.3 Solution Part 4}
+delays %>% arrange(dest, desc(mean_delay))
+```
+
+We can also compare the delays of the carriers across different airports: 
+
+```{r Exercise 5.3 Solution Part 5}
+delays %>% arrange(carrier, desc(mean_delay))
+```
+
+which clearly shows that the airports affect the performance of the carriers.
+
+
+## Part 6 -  Grouped mutates (and filters)
+
+The dplyr's `group_by()` can also be used in combination with `mutate()` to facilitate different transformation
+across different groups. Let's check this out in the following exercises. 
+
+### Exercise 6.1
+
+Are delays temporally correlated? One might think that even once the problem that caused the initial delay has been resolved, later flights are delayed to allow earlier flights to leave. To investigate this claim answer the questions below:
+    
+#### Exercise 6.1.1 
+
+What is the sample correlation between the delay of a flight and the delay of the preceding flight (i.e., lag 1) leaving `LGA` airport in January 1st? What about July 28th? (see `?dplyr::lag`)
+
+    
+For January 1st: 
+
+```{r Exercise 6.1.1 Solution Part 1}
+autocor_delay_jan <- flights %>%
+  filter(origin == "LGA", month == 1, day == 1, !is.na(dep_delay)) %>%
+  arrange(dep_time) %$%
+  cor(dep_delay, lag(dep_delay, 1), use = "complete.obs")
+```
+
+For July 28:
+
+```{r Exercise 6.1.1 Solution Part 2}
+autocor_delay_july <- flights %>%
+  filter(origin == "LGA", month == 7, day == 28, !is.na(dep_delay)) %>%
+  arrange(dep_time) %$%
+  cor(dep_delay, lag(dep_delay, 1), use = "complete.obs")
+```
+    
+
+#### Exercise 6.1.2 
+
+Repeat item above, but this time look two flights back (i.e., lag 2)? Do you notice anything?
+
+    
+```{r}
+flights %>%
+  filter(origin == "LGA", month == 1, day == 1, !is.na(dep_delay)) %>%
+  arrange(dep_time) %$%
+  cor(dep_delay, lag(dep_delay, 2), use = "complete.obs")
+
+flights %>%
+  filter(origin == "LGA", month == 7, day == 28, !is.na(dep_delay)) %>%
+  arrange(dep_time) %$%
+  cor(dep_delay, lag(dep_delay, 2), use = "complete.obs")
+```
+    
+Yes, there is a reduction of the correlation coefficients (in absolute value), which corroborates with the intuition that the delay of a flight is more correlated with the delay of the previous flight than with delays of earlier flights in the same day. Let's investigate this further in the next item. 
+    
+    
+#### Exercise 6.1.3 
+
+Use the `acf` function (see `?acf`) to obtain the correlation using many different lags for flights departing from `LGA` airport on January 1st. Do the same for flights departing from `LGA` airport on July 28th. What is your interpretation of these plots?
+
+##### BEGIN SOLUTIONS
+    
+```{r}
+# Lag January 1st
+acf_jan <- 
+  flights %>%
+  filter(origin == "LGA", month == 1, day == 1, !is.na(dep_delay)) %>%
+  arrange(dep_time) %$%
+  acf(dep_delay)
+
+# Lag July 28th
+acf_july <-
+  flights %>%
+  filter(origin == "LGA", month == 7, day == 28, !is.na(dep_delay)) %>%
+  arrange(dep_time) %$%
+  acf(dep_delay)
+```
+    
+The acf plot for January first indicates a lack of correlation between the flights' delays. On the other hand, in July 28th, the acf is decaying slowly, showing the long time dependence between the delays, which corroborates with the idea stated in the exercise. 
+
+
+#### Exercise 6.1.4 
+
+
+So far the investigation was focused on two specific days. Now, create a new variable with `mutate`, named `dep_delay_lagged`, which is the lagged `dep_delay` and obtain the correlation coefficient between `dep_delay` and `dep_delay_lagged` for each day of the year, and each origin. Use a lag of 1. What day of the year and origin presented the highest correlation coefficient?
+
+    
+```{r Exercise 6.1.4 Solution}
+delay_autocor <-
+  flights %>%
+  arrange(origin, month, day, dep_time) %>%
+  group_by(origin, month, day) %>%
+  mutate(dep_delay_lagged = lag(dep_delay)) %>%
+  summarise(r = cor(dep_delay, lag(dep_delay), use = "complete.obs")) %>%
+  arrange(desc(r))
+```
+
+July 28th in `LGA` airport presented the highest correlation coefficient.
+    
+
+### Exercise 6.2  
+rubric={accuracy:5}
+
+Look at each destination. Can you find flights that are suspiciously fast? (*i.e.* flights that represent a potential data entry error). (Optional) Which flights were most delayed in the air? (Hint: Look for flights with air speed higher than 3 standard deviation from the  mean)
+
+To find the suspiciously fast flights we compute `air_speed`, as `air_time` alone is not a reasonable predictor (why not?). The code below compares `air_speed` for each flight to the average `air_speed` for each `(origin, dest)` pair. 
+    
+```{r Exercise 6.2 Solution Part 1}
+fast_flights <-
+  flights %>%
+  na.omit() %>%
+  group_by(origin, dest) %>%
+  mutate(air_speed = (distance * 1.6093) / (air_time / 60),
+         mean_air_speed = mean(air_speed),
+         sd_air_speed = sd(air_speed)) %>%
+  filter(air_speed > mean_air_speed + 3 * sd_air_speed)
+```
+
+Another possibility is to group by destination only. Since the three origin airports are all in the same city, this should not affect
+the results much, while considerably reducing the number of groups. We have to be aware that a large number of groups might results in groups that have just a few observations, which makes their estimatives unreliable (e.g., imagine a group with only one flight, how informative you think the average of such group is?).
+
+For the second question, we have:
+
+```{r Exercise 6.2 Solution Part 2}
+most_delayed_air <- 
+  flights %>% 
+  mutate(air_delay = arr_delay - dep_delay) %>%
+  arrange(desc(air_delay))
+```
