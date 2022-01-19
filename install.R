@@ -1,0 +1,5 @@
+install.packages('leaflet')
+install.packages('tidyverse')
+install.packages('nycflights13')
+install.packages('magrittr')
+install.packages('digest')

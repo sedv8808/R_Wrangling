@@ -1,0 +1,210 @@
+---
+title: "Exercise 1 - Working with tabular datasets"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(nycflights13)
+library(magrittr)
+library(digest)
+library(testthat)
+```
+
+The goal is to explore the `nycflights13` dataset from the R `nycflights13` package with the `dplyr` package. 
+
+Several questions were drawn from Chapter 5 of the book [_R for data science_ by G. Grolemund and H. Wickham](http://r4ds.had.co.nz/index.html). 
+
+
+## Part 1 - The `filter()` function
+
+`filter()` is a tidyverse function that returns the rows that satisfy the desired conditions. Let's now practice using `filter`!
+
+### Exercise 1.1 
+
+Use dplyr's `filter()` to answer which flights were operated by United, American, or Delta? Save the output of your code as a tibble (special kind of data frame) named `flights_uad`. (Hint: check the tibble `airlines` for carrier names)
+
+
+```{r Exercise 1.1}
+
+(flights_uad <- NULL)
+```  
+
+
+### Exercise 1.2
+
+Use dplyr's `filter()` to answer which flights arrived more than two hours late, but did not leave late?
+    
+```{r Exercise 1.2}
+
+(delayed_on_route <- NULL)
+```
+
+
+### Exercise 1.3
+
+Use dplyr's `filter()` to answer which flights departed between 2:00am and 6:00am (inclusive)? (Suggestion: check the dplyr's function `between()`)
+
+```{r Exercise 1.3}
+#TODO
+# get the flights that were departed between 2:00am and 6:00am
+# replace NULL with your code
+(flights_early <- NULL)
+```
+
+## Part 2 - The `arrange()` function
+
+`arrange()` is a tidyverse function that allows you to sort the rows in ascending or descending order. Let's practice!
+
+### Exercise 2.1
+
+Use dplyr's `arrange()` (and dplyr's `filter()` if necessary) to find those flights most delayed on departure. Also, find the least non-negatively delayed flights (on departure).
+
+```{r Exercise 2.1}
+(most_delayed <- NULL)
+
+
+(least_delayed <- NULL)
+```
+
+
+### Exercise 2.2
+
+Use dplyr's `arrange()` to find which flights travelled the longest in terms of air time? And which travelled the shortest (in terms of air time)?
+
+```{r Exercise 2.2}
+
+(longest_duration <- NULL)
+
+(shortest_duration <- NULL)
+``` 
+
+
+## Part 3 - `select()`
+
+Use dplyr's `select()` to answer the following questions:
+
+### Exercise 3.1 
+
+Select the variables `dep_time`, `dep_delay`, `arr_time`, and `arr_delay` from flights.
+
+```{r Exercise 3.1}
+
+```
+
+## Part 4 - `mutate()`
+
+`mutate()` is a tidyverse function that allows you to transform existing variables or create new variables that are functions of the existing ones. Use `mutate()` to answer the questions below.
+ 
+### Exercise 4.1 
+Currently `dep_time` and `sched_dep_time` are convenient to look at, but hard to compute with because they are not really continuous numbers. To change that, answer the following questions:
+
+
+#### Exercise 4.1.1
+
+Considering the previous items, convert `dep_time` and `sched_dep_time` to a more convenient representation of number of minutes since midnight using `mutate()`.
+
+```{r Exercise 4.1.3}
+
+```    
+
+### Exercise 4.2 
+
+Create a new variable `avg_speed` that stores the average air speed of the flight in km/h. (Hint: 1 mile is approximately 1.6093 km).
+
+```{r Exercise 4.2}
+
+(flights_df <- NULL)
+```    
+    
+### Exercise 4.3 (Optional) 
+
+Compare `air_time` with `arr_time` - `dep_time`. What do you expect to see? What do you see? List a few problems that would need to be fixed (don't worry about fixing them right now).
+
+```{r Exercise 4.3}
+
+```
+
+## Part 5 - Grouped summaries with `summarise()`
+
+`summarise()` is a dplyr function that obtain summary quantities for your data. When combined with `group_by()`, `summarise()` will obtain the requested summary quantities for each individual group. Let's practice this combination. 
+
+Use dplyr's `group_by()` and `summarise()` to answer the questions below.
+
+### Exercise 5.1 
+
+Look at the number of cancelled flights in each day of the year. Is the proportion of cancelled flights related to the average departure delay? What is the sample correlation value? (Hint: one way to identify cancelled flights would be to look for missing values in the delay variables).
+
+```{r Exercise 5.1}
+
+cor_canc_delay <- NULL
+```
+
+
+### Exercise 5.2 
+
+Obtain the average speed and average distance for each carrier. Sort the results according to the average speed. What happened to the average distance variable (after you sorted according to the average speed)? Would you say that the variables are correlated?
+
+```{r Exercise 5.2}
+
+cor_canc_delay <- NULL
+```
+
+
+### Exercise 5.3
+
+Which carrier has the worst delays? What about airports - which airports have the worst delays? Do you think the airports have a role on the performance of the carriers? Check the delay average grouped by airport and carrier. (Note: when summarising never forget to check the number of samples you have in the categories, see `?n()` - a very small sample provides very unstable estimators.)
+
+```{r Exercise 5.3}
+
+```
+
+## Part 6 -  Grouped mutates (and filters)
+
+The dplyr's `group_by()` can also be used in combination with `mutate()` to facilitate different transformation
+across different groups. Let's check this out in the following exercises. 
+
+### Exercise 6.1
+
+Are delays temporally correlated? One might think that even once the problem that caused the initial delay has been resolved, later flights are delayed to allow earlier flights to leave. To investigate this claim answer the questions below:
+    
+#### Exercise 6.1.1 
+
+What is the sample correlation between the delay of a flight and the delay of the preceding flight (i.e., lag 1) leaving `LGA` airport in January 1st? What about July 28th? (see `?dplyr::lag`)
+
+```{r Exercise 6.1.1}
+
+autocor_delay_jan <- NULL
+
+
+autocor_delay_july <- NULL
+```
+
+#### Exercise 6.1.3 
+
+Use the `acf` function (see `?acf`) to obtain the correlation using many different lags for flights departing from `LGA` airport on January 1st. Do the same for flights departing from `LGA` airport on July 28th. What is your interpretation of these plots?
+
+```{r}
+
+```
+
+#### Exercise 6.1.4 
+
+So far the investigation was focused on two specific days. Now, create a new variable with `mutate`, named `dep_delay_lagged`, which is the lagged `dep_delay` and obtain the correlation coefficient between `dep_delay` and `dep_delay_lagged` for each day of the year, and each origin. Use a lag of 1. What day of the year and origin presented the highest correlation coefficient?
+
+```{r Exercise 6.1.4}
+
+delay_autocor <- NULL
+```
+    
+
+### Exercise 6.2  
+
+Look at each destination. Can you find flights that are suspiciously fast? (*i.e.* flights that represent a potential data entry error).  Which flights were most delayed in the air? (Hint: Look for flights with air speed higher than 3 standard deviation from the  mean)
+
+```{r Exercise 6.2}
+
+fast_flights <- NULL
+```
+      
